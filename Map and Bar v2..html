@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5.22.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.2.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.20.8"></script>
+</head>
+<body>
+  <div id="vis"/>
+  <script>
+    const spec = {
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "title": "Population Density",
+  "params": [
+    {
+      "name": "Year_selection",
+      "value": 2020,
+      "bind": {
+        "input": "range",
+        "min": 1970,
+        "max": 2020,
+        "step": 10,
+        "name": "Year: "
+      }
+    },
+    {
+      "name": "zoom_level",
+      "value": 150,
+      "bind": {
+        "input": "range",
+        "min": 150,
+        "max": 400,
+        "step": 25,
+        "name": "Zoom: "
+      }
+    },
+    {
+      "name": "center_to",
+      "value": [-330, 100],
+      "bind": {
+        "input": "select",
+        "options": [
+          [-330, 100],
+          [-330, 106],
+          [-200, 125],
+          [-70, 75],
+          [-75, 100],
+          [-301, 90],
+          [-270, 25]
+        ],
+        "labels": [
+          "Full View",
+          "Africa",
+          "Asia",
+          "Australia/Oceania",
+          "Europe",
+          "North America",
+          "South America"
+        ],
+        "name": "Map Centre: "
+      }
+    }
+  ],
+  "vconcat": [
+    {
+      "hconcat": [
+        {
+          "width": 950,
+          "height": 400,
+          "projection": {
+            "type": "equalEarth",
+            "rotate": [-10, 0, 0],
+            "center": {"expr": "center_to"},
+            "scale": {"expr": "zoom_level"}
+          },
+          "layer": [
+            {
+              "data": {
+                "url": "https://raw.githubusercontent.com/miltonchiu13/FIT3179/main/js/ne_110m.json",
+                "format": {
+                  "type": "topojson",
+                  "feature": "ne_110m_admin_0_countries"
+                }
+              },
+              "transform": [
+                {
+                  "calculate": "'Data is not available in ' + datum.properties.NAME",
+                  "as": "note"
+                }
+              ],
+              "mark": {
+                "type": "geoshape",
+                "fill": "#ddd",
+                "stroke": "white",
+                "strokeWidth": 1
+              },
+              "encoding": {"tooltip": {"field": "note"}}
+            },
+            {
+              "data": {
+                "url": "https://raw.githubusercontent.com/miltonchiu13/FIT3179/main/js/ne_50m_ocean.json",
+                "format": {"type": "topojson", "feature": "ne_50m_ocean"}
+              },
+              "mark": {"type": "geoshape", "fill": "skyblue"}
+            },
+            {
+              "data": {
+                "url": "https://raw.githubusercontent.com/miltonchiu13/FIT3179/main/js/ne_110m_graticules_30.json",
+                "format": {
+                  "type": "topojson",
+                  "feature": "ne_110m_graticules_30"
+                }
+              },
+              "mark": {"type": "geoshape", "fill": null, "stroke": "lightgray"}
+            },
+            {
+              "data": {
+                "url": "https://raw.githubusercontent.com/miltonchiu13/FIT3179/main/data/world_pd_byYear%20.csv"
+              },
+              "transform": [
+                {
+                  "lookup": "Country",
+                  "from": {
+                    "data": {
+                      "url": "https://raw.githubusercontent.com/miltonchiu13/FIT3179/main/js/ne_110m.json",
+                      "format": {
+                        "type": "topojson",
+                        "feature": "ne_110m_admin_0_countries"
+                      }
+                    },
+                    "key": "properties.NAME"
+                  },
+                  "as": "geo"
+                },
+                {"filter": "datum.Year == Year_selection"}
+              ],
+              "mark": {
+                "type": "geoshape",
+                "stroke": "white",
+                "strokeWidth": 0.5
+              },
+              "encoding": {
+                "shape": {"field": "geo", "type": "geojson"},
+                "color": {
+                  "field": "populationDensity",
+                  "title": "Population per km²",
+                  "type": "quantitative",
+                  "legend": {
+                    "direction": "vertical",
+                    "orient": "right",
+                    "offset": 1,
+                    "titleAlign": "center",
+                    "values": [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000]
+                  },
+                  "scale": {
+                    "type": "threshold",
+                    "domain": [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000],
+                    "range": [
+                      "#feeee2",
+                      "#fed1b1",
+                      "#ffb580",
+                      "#ff984f",
+                      "#ff7c1e",
+                      "#ec6200",
+                      "#bb4e00",
+                      "#8a3900",
+                      "#592500",
+                      "#281000",
+                      "#100600"
+                    ]
+                  }
+                },
+                "tooltip": [
+                  {"field": "Country", "type": "nominal", "title": "Country"},
+                  {
+                    "field": "populationDensity",
+                    "type": "quantitative",
+                    "title": "Population Density",
+                    "format": ".2f"
+                  },
+                  {"field": "Year", "type": "quantitative", "title": "Year"}
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": {"text": "Top 10 Most Densely Populated Countries"},
+      "data": {
+        "url": "https://raw.githubusercontent.com/miltonchiu13/FIT3179/main/data/world_pd_byYear%20.csv",
+        "format": {"parse": {"populationDensity": "number"}}
+      },
+      "width": 950,
+      "height": {"step": 30},
+      "params": [
+        {
+          "name": "Year_selection",
+          "value": 2020,
+          "bind": {
+            "input": "range",
+            "min": 1970,
+            "max": 2020,
+            "step": 10,
+            "name": "Year: "
+          }
+        },
+        {"name": "highlight", "select": {"type": "point", "on": "mouseover"}},
+        {"name": "select", "select": "point"}
+      ],
+      "transform": [
+        {"filter": "datum.Year == Year_selection"},
+        {
+          "window": [{"op": "rank", "as": "rank"}],
+          "sort": [{"field": "populationDensity", "order": "descending"}]
+        },
+        {"filter": "datum.rank <= 10"}
+      ],
+      "mark": {
+        "type": "bar",
+        "fill": "#4C78A8",
+        "stroke": "black",
+        "cursor": "pointer"
+      },
+      "encoding": {
+        "x": {
+          "field": "populationDensity",
+          "type": "quantitative",
+          "title": "Population per km²",
+          "scale": {"domain": [0, 24000]}
+        },
+        "y": {
+          "field": "Country",
+          "type": "nominal",
+          "sort": "-x",
+          "title": null
+        },
+        "fillOpacity": {
+          "condition": {"param": "select", "value": 1},
+          "value": 0.3
+        },
+        "strokeWidth": {
+          "condition": [
+            {"param": "select", "empty": false, "value": 2},
+            {"param": "highlight", "empty": false, "value": 1}
+          ],
+          "value": 0
+        },
+        "tooltip": [
+          {"field": "Country", "type": "nominal", "title": "Country"},
+          {
+            "field": "populationDensity",
+            "type": "quantitative",
+            "title": "Population Density",
+            "format": ".2f"
+          },
+          {"field": "Year", "type": "quantitative", "title": "Year"}
+        ]
+      }
+    }
+  ],
+  "config": {}
+};
+    vegaEmbed("#vis", spec, {mode: "vega-lite"}).then(console.log).catch(console.warn);
+  </script>
+</body>
+</html>
